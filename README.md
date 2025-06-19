@@ -1,6 +1,14 @@
 # Prerequisites
 This solution is designed to run on Ubuntu, it has been tested on Ubuntu 24.04.1 LTS. You will need the following packages:
-´python3 postgresql postgresql-contrib´
+```
+python3 postgresql postgresql-contrib redis
+```
+
+Ensure that Redis is started:
+
+```
+sudo systemctl start redis
+```
 
 # Installation
 Install required Python packages in the local environment:
