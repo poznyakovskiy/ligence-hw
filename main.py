@@ -16,8 +16,6 @@ NUM_MODIFICATIONS_MIN = 100
 os.makedirs(FS_PATH, exist_ok=True)
 
 def xor_swap(img: Image.Image, coord1: tuple, coord2: tuple) -> Image.Image:
-    """Swap two pixels using XOR logic. Works for grayscale or RGB images."""
-
     if img.mode not in ("L", "RGB", "RGBA"):
         raise ValueError("Only 'L', 'RGB', and 'RGBA' images are supported.")
 
@@ -151,7 +149,7 @@ def check(db: Session = Depends(get_db)):
 
             reversed_params = list(reversed(mod.params))
 
-            # Perform every modification step in reverse order, reversed
+            # Perform every modification step in reverse order
             for step in reversed_params:
                 x0, y0 = step["x0"], step["y0"]
                 x1, y1 = step["x1"], step["y1"]
