@@ -47,7 +47,7 @@ def xor_swap(img: Image.Image, coord1: tuple, coord2: tuple) -> Image.Image:
 
     return img
 
-def add_image (file_bytes, filename):
+def generate_mods (file_bytes, filename):
     db = next(get_db())
 
     # Generate a unique filename with original extension
@@ -95,7 +95,7 @@ def add_image (file_bytes, filename):
     # Save the file
     img.save(save_path)
 
-def check_mods():
+def verify_mods():
     db = next(get_db())
     pending_mods = db.query(models.Modification).filter(models.Modification.verification.in_(["pending", "failed"])).all()
 
