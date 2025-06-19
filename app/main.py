@@ -1,17 +1,13 @@
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
-import random
 import os
 import io
-import uuid
-import asyncio
 import redis
 from rq import Queue
 from sqlalchemy.orm import Session
-from PIL import Image
 
-from database import get_db, engine, Base
-import models
-import tasks
+from .database import get_db, engine, Base
+from . import models
+from . import tasks
 
 FS_PATH = "./fs/"
 NUM_MODIFIED_IMAGES = 1 # 100

@@ -1,8 +1,9 @@
 from sqlalchemy import Column, Integer, String, JSON, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from database import Base
 from sqlalchemy import CheckConstraint
+
+from .database import Base
 
 class Image(Base):
     __tablename__ = "images"

@@ -4,8 +4,8 @@ import uuid
 from fastapi import File, UploadFile
 from PIL import Image
 
-from database import get_db
-import models
+from .database import get_db
+from . import models
 
 FS_PATH = "./fs/"
 NUM_MODIFIED_IMAGES = 100
