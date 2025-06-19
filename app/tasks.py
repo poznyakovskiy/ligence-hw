@@ -3,6 +3,9 @@ import random
 import uuid
 from fastapi import File, UploadFile
 from PIL import Image
+from rq import get_current_job
+import redis
+import json
 
 from .database import get_db
 from . import models
@@ -10,6 +13,8 @@ from . import models
 FS_PATH = "./fs/"
 NUM_MODIFIED_IMAGES = 100
 NUM_MODIFICATIONS_MIN = 100
+
+r = redis.Redis()
 
 def xor_swap(img: Image.Image, coord1: tuple, coord2: tuple) -> Image.Image:
     if img.mode not in ("L", "RGB", "RGBA"):
@@ -49,6 +54,9 @@ def xor_swap(img: Image.Image, coord1: tuple, coord2: tuple) -> Image.Image:
 
 def generate_mods (file_bytes, filename):
     db = next(get_db())
+    job = get_current_job()
+    job_id = job.id
+    key = f"progress:{job_id}"
 
     # Generate a unique filename with original extension
     ext = os.path.splitext(filename)[1]
@@ -66,6 +74,8 @@ def generate_mods (file_bytes, filename):
 
     # Create NUM_MODIFIED_IMAGES modified images
     for modified_id in range(0, NUM_MODIFIED_IMAGES):
+        i = modified_id
+        r.set(key, json.dumps({"processed": i, "total": NUM_MODIFIED_IMAGES}))
         modified_img = img.copy()
         modified_filename = f"{id}-{modified_id}{ext}"
         num_swaps = random.randint(NUM_MODIFICATIONS_MIN, width * height)
@@ -94,15 +104,22 @@ def generate_mods (file_bytes, filename):
 
     # Save the file
     img.save(save_path)
+    r.delete(key)
+    return {"id": id, "filename": filename, "message": "Image uploaded successfully"}
 
 def verify_mods():
     db = next(get_db())
+    job = get_current_job()
+    job_id = job.id
+    key = f"progress:{job_id}"
     pending_mods = db.query(models.Modification).filter(models.Modification.verification.in_(["pending", "failed"])).all()
 
     num_successful = 0
     num_failed = 0
 
     for mod in pending_mods:
+        i = pending_mods.index(mod)
+        r.set(key, json.dumps({"processed": i, "total": len(pending_mods)}))
         try:
             # We only accept one modification for this assignment
             if mod.modification_type != "xor_swaps":
@@ -153,3 +170,9 @@ def verify_mods():
             db.add(mod)
 
     db.commit()
+    r.delete(key)
+    return {
+        "message": "Verification completed",
+        "successful": num_successful,
+        "failed": num_failed,
+    }

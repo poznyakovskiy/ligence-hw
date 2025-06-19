@@ -1,3 +1,4 @@
+import json
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
 import os
 import io
@@ -19,6 +20,27 @@ redis_conn = redis.Redis()
 q = Queue(connection=redis_conn)
 
 ROLE = os.environ.get("ROLE", "generator")
+
+@app.get("/status/{job_id}")
+def get_status(job_id: str):
+    job = q.fetch_job(job_id)
+    if not job:
+        return {"status": "not found"}
+    
+    job_status = {}
+
+    if job.is_finished:
+        job_status = {"status": "finished", "result": job.result}
+    elif job.is_failed:
+        job_status = {"status": "failed"}
+    else:
+        job_status = {"status": "in progress"}
+
+    val = redis_conn.get(f"progress:{job_id}")
+    if val:
+        job_status["progress"] = json.loads(val)
+
+    return job_status
 
 if ROLE == "generator":
     # Create tables
