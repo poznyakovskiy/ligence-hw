@@ -5,7 +5,7 @@ If you have Docker, simply run
 docker-compose build
 docker-compose up
 ```
-The generator service will be under http://localhost:8000, the verifier wil be under http://localhost:8001 .
+The frontend will be available under http://localhost:8080. The generator service will be under http://localhost:8000, the verifier wil be under http://localhost:8001.
 
 # Run on the host machine
 ## Prerequisites

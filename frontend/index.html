@@ -34,12 +34,13 @@
   </table>
 
   <script>
-    const apiBaseModifier = 'http://localhost:8000';
-    const apiBaseVerifier = 'http://localhost:8001';
+    const isDocker = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.hostname !== '';
+    const apiBaseGenerator = isDocker ? 'http://generator:8000' : 'http://localhost:8000';
+    const apiBaseVerifier = isDocker ? 'http://verifier:8000' : 'http://localhost:8001';
 
     function pollJob(jobId, progressEl, statusEl, callback) {
       let interval = setInterval(() => {
-        fetch(`${apiBaseModifier}/status/${jobId}`)
+        fetch(`${apiBaseGenerator}/status/${jobId}`)
           .then(res => res.json())
           .then(data => {
             percentage = !data.progress || data.progress.total === 0 ? 0 : (data.progress.processed / data.progress.total) * 100;
@@ -71,7 +72,7 @@
       progress.value = 0;
       status.textContent = 'Modifying...';
 
-      fetch(`${apiBaseModifier}/image`, { method: 'POST', body: formData })
+      fetch(`${apiBaseGenerator}/image`, { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
           const jobId = data.job_id;
