@@ -42,7 +42,14 @@
         fetch(`${apiBaseModifier}/status/${jobId}`)
           .then(res => res.json())
           .then(data => {
-            progressEl.value = !data.progress || data.progress.total === 0 ? 0 : (data.progress.processed / data.progress.total) * 100;
+            percentage = !data.progress || data.progress.total === 0 ? 0 : (data.progress.processed / data.progress.total) * 100;
+            if (percentage === 0 || percentage >= 99) {
+              progressEl.removeAttribute('value');
+              progressEl.classList.add('indeterminate');
+            } else {
+              progressEl.value = percentage;
+              progressEl.classList.remove('indeterminate');
+            }
             if (data.status === 'finished') {
               clearInterval(interval);
               callback(data);
