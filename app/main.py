@@ -1,5 +1,6 @@
 import json
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 import os
 import io
 from redis import Redis
@@ -10,6 +11,16 @@ from app.database import get_db, engine, Base
 from app import models, tasks, config
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "*",
+    ],  # Or set to specific domains in prod
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 redis_conn = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT)
 q = Queue(connection=redis_conn)
@@ -60,3 +71,8 @@ elif ROLE == "verifier":
     def verify():
         job = q.enqueue(tasks.verify_mods)
         return {"job_id": job.get_id()}
+    
+    @app.get("/modifications")
+    def get_modifications(db: Session = Depends(get_db)):
+        modifications = db.query(models.Modification).limit(100).all()
+        return [{"id": mod.id, "filename": mod.filename, "status": mod.verification} for mod in modifications]

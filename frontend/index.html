@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Image Modifier & Verifier</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 2em; }
+    progress { width: 100%; height: 20px; }
+    button { margin-top: 1em; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+    th, td { border: 1px solid #ccc; padding: 0.5em; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>Image Modifier</h1>
+
+  <input type="file" id="fileInput" accept="image/*">
+  <button id="uploadBtn">Upload</button>
+  <progress id="uploadProgress" value="0" max="100" hidden></progress>
+  <div id="uploadStatus"></div>
+
+  <h2>Verify</h2>
+  <button id="verifyBtn">Verify</button>
+  <progress id="verifyProgress" value="0" max="100" hidden></progress>
+  <div id="verifyStatus"></div>
+
+  <h2>All Verifications</h2>
+  <button id="fetchVerifications">Fetch Verifications</button>
+  <table id="verificationsTable">
+    <thead>
+      <tr><th>ID</th><th>Filename</th><th>Status</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const apiBaseModifier = 'http://localhost:8000';
+    const apiBaseVerifier = 'http://localhost:8001';
+
+    function pollJob(jobId, progressEl, statusEl, callback) {
+      let interval = setInterval(() => {
+        fetch(`${apiBaseModifier}/status/${jobId}`)
+          .then(res => res.json())
+          .then(data => {
+            progressEl.value = !data.progress || data.progress.total === 0 ? 0 : (data.progress.processed / data.progress.total) * 100;
+            if (data.status === 'finished') {
+              clearInterval(interval);
+              callback(data);
+            }
+          });
+      }, 1000);
+    }
+
+    document.getElementById('uploadBtn').onclick = () => {
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) return alert('Please select an image.');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const progress = document.getElementById('uploadProgress');
+      const status = document.getElementById('uploadStatus');
+      progress.hidden = false;
+      progress.value = 0;
+      status.textContent = 'Modifying...';
+
+      fetch(`${apiBaseModifier}/image`, { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+          const jobId = data.job_id;
+          pollJob(jobId, progress, status, () => {
+            status.textContent = 'Modifications complete!';
+            progress.hidden = true;
+          });
+        });
+    };
+
+    document.getElementById('verifyBtn').onclick = () => {
+      const progress = document.getElementById('verifyProgress');
+      const status = document.getElementById('verifyStatus');
+      progress.hidden = false;
+      progress.value = 0;
+      status.textContent = 'Verifying...';
+
+      fetch(`${apiBaseVerifier}/verify`, { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          const jobId = data.job_id;
+          pollJob(jobId, progress, status, (final) => {
+            status.textContent = `Verified: ${final.result.successful} successful / ${final.result.failed} failed.`;
+            progress.hidden = true;
+          });
+        });
+    };
+
+    document.getElementById('fetchVerifications').onclick = () => {
+      fetch(`${apiBaseVerifier}/modifications`, { method: 'GET' })
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById('verificationsTable').querySelector('tbody');
+          tbody.innerHTML = '';
+          data.forEach(v => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${v.id}</td><td>${v.filename}</td><td>${v.status}</td>`;
+            tbody.appendChild(tr);
+          });
+        });
+    };
+  </script>
+</body>
+</html>
