@@ -5,7 +5,7 @@ If you have Docker, simply run
 docker-compose build
 docker-compose up
 ```
-The frontend will be available under http://localhost:8080. The generator service will be under http://localhost:8000, the verifier wil be under http://localhost:8001.
+The frontend will be available under http://localhost:8080. The generator service will be under http://localhost:8000, the verifier wil be under http://localhost:8001. You can find the Swagger docs under http://localhost:800/docs and http://localhost:8001/docs, respectively.
 
 If you have redis or postgresql on your system, you will need to stop them first. You can do it with
 
