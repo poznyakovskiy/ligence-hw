@@ -56,11 +56,6 @@ def get_status(job_id: str):
 if ROLE == "generator":
     # Create tables
     Base.metadata.create_all(bind=engine)
-    
-    @app.get("/images")
-    def images_get(db: Session = Depends(get_db)):
-        images = db.query(models.Image).all()
-        return [{"id": img.id, "filename": img.filename} for img in images]
 
     @app.post(
         "/image",
