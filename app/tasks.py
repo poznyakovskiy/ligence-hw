@@ -54,7 +54,7 @@ def generate_mods (file_bytes, filename):
     key = f"progress:{job_id}"
 
     # Generate a unique filename with original extension
-    ext = os.path.splitext(filename)[1]
+    ext = ".tif" # os.path.splitext(filename)[1]
     id = uuid.uuid4().hex
     path = f"{id}{ext}"
     save_path = os.path.join(config.FS_PATH, path)
@@ -126,6 +126,7 @@ def verify_mods():
             if not os.path.exists(mod_path):
                 raise FileNotFoundError(f"Modified image file not found: {mod_path}")
             img = Image.open(mod_path)
+            img = img.copy()
 
             reversed_params = list(reversed(mod.params))
 
