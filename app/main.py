@@ -2,21 +2,16 @@ import json
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
 import os
 import io
-import redis
+from redis import Redis
 from rq import Queue
 from sqlalchemy.orm import Session
 
-from .database import get_db, engine, Base
-from . import models
-from . import tasks
-
-FS_PATH = "./fs/"
-
-os.makedirs(FS_PATH, exist_ok=True)
+from app.database import get_db, engine, Base
+from app import models, tasks, config
 
 app = FastAPI()
 
-redis_conn = redis.Redis()
+redis_conn = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT)
 q = Queue(connection=redis_conn)
 
 ROLE = os.environ.get("ROLE", "generator")

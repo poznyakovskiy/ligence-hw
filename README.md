@@ -1,4 +1,14 @@
-# Prerequisites
+# Run using Docker (recommended)
+If you have Docker, simply run
+
+```
+docker-compose build
+docker-compose up
+```
+The generator service will be under http://localhost:8000, the verifier wil be under http://localhost:8001 .
+
+# Run on the host machine
+## Prerequisites
 This solution is designed to run on Ubuntu, it has been tested on Ubuntu 24.04.1 LTS. You will need the following packages:
 ```
 python3 postgresql postgresql-contrib redis
@@ -10,7 +20,7 @@ Ensure that Redis is started:
 sudo systemctl start redis
 ```
 
-# Installation
+## Installation
 Install required Python packages in the local environment:
 
 ``` sh

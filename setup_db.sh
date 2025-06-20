@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# This script sets up the PostgreSQL database and user for the image transformation project
-
 DB_NAME="hw"
 DB_USER="ligence"
 DB_PASS="pass"

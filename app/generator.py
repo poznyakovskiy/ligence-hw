@@ -1,3 +1,3 @@
 import os
 os.environ["ROLE"] = "generator"
-from .main import app
+from app.main import app

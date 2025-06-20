@@ -5,3 +5,4 @@ psycopg2-binary==2.9.9
 redis==6.2.0
 rq==2.4.0
 uvicorn==0.34.3
+python-multipart==0.0.20

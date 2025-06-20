@@ -1,20 +1,15 @@
 import os
 import random
 import uuid
-from fastapi import File, UploadFile
 from PIL import Image
 from rq import get_current_job
 import redis
 import json
 
-from .database import get_db
-from . import models
+from app.database import get_db
+from app import models, config
 
-FS_PATH = "./fs/"
-NUM_MODIFIED_IMAGES = 100
-NUM_MODIFICATIONS_MIN = 100
-
-r = redis.Redis()
+r = redis.Redis(host=config.REDIS_HOST, port=config.REDIS_PORT)
 
 def xor_swap(img: Image.Image, coord1: tuple, coord2: tuple) -> Image.Image:
     if img.mode not in ("L", "RGB", "RGBA"):
@@ -62,10 +57,10 @@ def generate_mods (file_bytes, filename):
     ext = os.path.splitext(filename)[1]
     id = uuid.uuid4().hex
     path = f"{id}{ext}"
-    save_path = os.path.join(FS_PATH, path)
+    save_path = os.path.join(config.FS_PATH, path)
 
     # Create directory for modified images
-    modified_folder = os.path.join(FS_PATH, f"{id}")
+    modified_folder = os.path.join(config.FS_PATH, f"{id}")
     os.makedirs(modified_folder)
 
     # Open the image as PIL Image
@@ -73,20 +68,21 @@ def generate_mods (file_bytes, filename):
     width, height = img.size
 
     # Create NUM_MODIFIED_IMAGES modified images
-    for modified_id in range(0, NUM_MODIFIED_IMAGES):
+    for modified_id in range(0, config.NUM_MODIFIED_IMAGES):
         i = modified_id
-        r.set(key, json.dumps({"processed": i, "total": NUM_MODIFIED_IMAGES}))
+        r.set(key, json.dumps({"processed": i, "total": config.NUM_MODIFIED_IMAGES}))
         modified_img = img.copy()
         modified_filename = f"{id}-{modified_id}{ext}"
-        num_swaps = random.randint(NUM_MODIFICATIONS_MIN, width * height)
+        num_swaps = random.randint(config.NUM_MODIFICATIONS_MIN, width * height)
         swaps = []
         for _ in range(num_swaps):
             x0, y0 = random.randint(0, width - 1), random.randint(0, height - 1)
             x1, y1 = random.randint(0, width - 1), random.randint(0, height - 1)
             swaps.append({"x0": x0, "y0": y0, "x1": x1, "y1": y1})
             modified_img = xor_swap(modified_img, (x0, y0), (x1, y1))
-            
-        modified_img.save(os.path.join(modified_folder, modified_filename))
+        
+        modified_img_path = os.path.join(modified_folder, modified_filename)
+        modified_img.save(modified_img_path)
 
         new_mod = models.Modification(
             image_id=id,
@@ -105,14 +101,14 @@ def generate_mods (file_bytes, filename):
     # Save the file
     img.save(save_path)
     r.delete(key)
-    return {"id": id, "filename": filename, "message": "Image uploaded successfully"}
+    return {"id": id, "filename": filename, "message": f"Generated {config.NUM_MODIFIED_IMAGES} modified images"}
 
 def verify_mods():
     db = next(get_db())
     job = get_current_job()
     job_id = job.id
     key = f"progress:{job_id}"
-    pending_mods = db.query(models.Modification).filter(models.Modification.verification.in_(["pending", "failed"])).all()
+    pending_mods = db.query(models.Modification).filter(models.Modification.verification.in_(["pending"])).all()
 
     num_successful = 0
     num_failed = 0
@@ -126,7 +122,7 @@ def verify_mods():
                 raise ValueError(f"Unsupported modification type: {mod.modification_type}")
 
             # Load the modified image
-            mod_path = os.path.join(FS_PATH, mod.image_id, mod.filename)
+            mod_path = os.path.join(config.FS_PATH, mod.image_id, mod.filename)
             if not os.path.exists(mod_path):
                 raise FileNotFoundError(f"Modified image file not found: {mod_path}")
             img = Image.open(mod_path)
@@ -146,7 +142,7 @@ def verify_mods():
             if not orig_image:
                 raise ValueError(f"Original image not found in DB for image_id: {mod.image_id}")
 
-            orig_path = os.path.join(FS_PATH, orig_image.path)
+            orig_path = os.path.join(config.FS_PATH, orig_image.path)
             if not os.path.exists(orig_path):
                 raise FileNotFoundError(f"Original image file not found: {orig_path}")
 
